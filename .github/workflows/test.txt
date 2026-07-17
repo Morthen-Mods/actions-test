@@ -1,0 +1,240 @@
+name: Build & Publish Mod
+
+# ── WHEN THIS RUNS ────────────────────────────────────────────────────────
+# 1) Automatically, whenever you publish a GitHub Release (recommended).
+#    -> The release's tag becomes the version, and the release description
+#       becomes the changelog automatically.
+# 2) Manually, via the "Run workflow" button (workflow_dispatch), where you
+#    can type a custom changelog and pick a release channel. Handy for
+#    testing without cutting a real release.
+on:
+  release:
+    types: [published]
+
+  workflow_dispatch:
+    inputs:
+      changelog:
+        description: "Changelog text (Markdown supported)"
+        required: false
+        default: ""
+      version_type:
+        description: "Release channel"
+        required: true
+        default: "release"
+        type: choice
+        options:
+          - release
+          - beta
+          - alpha
+
+# Only one publish pipeline runs at a time, so two releases can't race
+# each other and cause duplicate uploads.
+concurrency:
+  group: publish-mod
+  cancel-in-progress: false
+
+env:
+  # ── EDIT ME: game/loader targets ─────────────────────────────────────
+  GAME_VERSIONS: "1.21, 1.21.1"
+  JAVA_VERSION: "21"
+
+  # ── EDIT ME: dependencies ────────────────────────────────────────────
+  # Format: "<project-slug-or-id>(<scope>)" separated by commas.
+  # Scopes: required | optional | embedded | incompatible
+  DEPENDENCIES: "fabric-api(required), cloth-config(required), modmenu(optional)"
+
+jobs:
+  # ── 1. GAMETEST ────────────────────────────────────────────────────────
+  # Runs each loader's headless GameTest server. If any loader's tests
+  # fail, the whole pipeline stops here — nothing gets built or published.
+  gametest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false # let all three loaders finish so you see every failure, not just the first
+      matrix:
+        loader: [fabric, forge, neoforge]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
+
+      - run: chmod +x gradlew
+
+      - name: Run GameTest (${{ matrix.loader }})
+        run: ./gradlew :${{ matrix.loader }}:runGameTestServer --no-daemon
+
+  # ── 2. BUILD ─────────────────────────────────────────────────────────
+  # Only starts once every gametest matrix leg has passed. Builds all
+  # three loader jars and hands them off as a workflow artifact so the
+  # publish jobs below don't need to rebuild anything.
+  build:
+    needs: gametest
+    runs-on: ubuntu-latest
+    outputs:
+      mod_version: ${{ steps.version.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
+
+      - run: chmod +x gradlew
+
+      # The mod's version, published to CurseForge/Modrinth, is read from
+      # gradle.properties — the tag/release name is only what triggers the
+      # workflow, not the source of truth for the version string.
+      - name: Read version from gradle.properties
+        id: version
+        run: |
+          VERSION=$(grep '^mod_version=' gradle.properties | cut -d'=' -f2 | tr -d '[:space:]')
+          if [ -z "$VERSION" ]; then
+            echo "::error::mod_version not found in gradle.properties"
+            exit 1
+          fi
+          echo "Found mod_version=$VERSION"
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+
+      # Safety net: if you tag v1.2.0 but forgot to bump mod_version in
+      # gradle.properties to 1.2.0, fail loudly here instead of quietly
+      # publishing the wrong version. Only checked on Release triggers,
+      # since manual runs don't have a real tag to compare against.
+      - name: Verify tag matches gradle.properties version
+        if: github.event_name == 'release'
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          TAG="${TAG#v}"
+          if [ "$TAG" != "${{ steps.version.outputs.value }}" ]; then
+            echo "::error::Release tag 'v${TAG}' does not match mod_version '${{ steps.version.outputs.value }}' in gradle.properties. Update gradle.properties or re-tag."
+            exit 1
+          fi
+
+      - name: Build all loaders
+        run: ./gradlew :fabric:build :forge:build :neoforge:build --no-daemon
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-libs
+          path: |
+            fabric/build/libs/*.jar
+            forge/build/libs/*.jar
+            neoforge/build/libs/*.jar
+          if-no-files-found: error
+
+  # ── 3. PUBLISH (CurseForge + Modrinth) ──────────────────────────────
+  # Downloads the jars built above (no rebuilding) and uploads one
+  # version per loader to both platforms.
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-libs
+
+      - name: Resolve changelog
+        id: changelog
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "text<<EOF" >> "$GITHUB_OUTPUT"
+            echo "${{ github.event.release.body }}" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+          else
+            echo "text<<EOF" >> "$GITHUB_OUTPUT"
+            echo "${{ github.event.inputs.changelog }}" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish Fabric build
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: ${{ vars.MODRINTH_PROJECT_ID }}
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          curseforge-id: ${{ vars.CURSEFORGE_PROJECT_ID }}
+          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+          files: fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
+          name: ${{ github.event.release.name || format('Manual build {0}', github.run_number) }}
+          version: ${{ needs.build.outputs.mod_version }}
+          version-type: ${{ github.event.inputs.version_type || 'release' }}
+          changelog: ${{ steps.changelog.outputs.text }}
+          loaders: fabric, quilt
+          game-versions: ${{ env.GAME_VERSIONS }}
+          java: ${{ env.JAVA_VERSION }}
+          dependencies: ${{ env.DEPENDENCIES }}
+          fail-mode: fail-at-end
+          retry-attempts: 2
+          retry-delay: 10000
+
+      - name: Publish Forge build
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: ${{ vars.MODRINTH_PROJECT_ID }}
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          curseforge-id: ${{ vars.CURSEFORGE_PROJECT_ID }}
+          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+          files: forge/build/libs/!(*-@(dev|sources|javadoc)).jar
+          name: ${{ github.event.release.name || format('Manual build {0}', github.run_number) }}
+          version: ${{ needs.build.outputs.mod_version }}
+          version-type: ${{ github.event.inputs.version_type || 'release' }}
+          changelog: ${{ steps.changelog.outputs.text }}
+          loaders: forge
+          game-versions: ${{ env.GAME_VERSIONS }}
+          java: ${{ env.JAVA_VERSION }}
+          dependencies: ${{ env.DEPENDENCIES }}
+          fail-mode: fail-at-end
+          retry-attempts: 2
+          retry-delay: 10000
+
+      - name: Publish NeoForge build
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: ${{ vars.MODRINTH_PROJECT_ID }}
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          curseforge-id: ${{ vars.CURSEFORGE_PROJECT_ID }}
+          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+          files: neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
+          name: ${{ github.event.release.name || format('Manual build {0}', github.run_number) }}
+          version: ${{ needs.build.outputs.mod_version }}
+          version-type: ${{ github.event.inputs.version_type || 'release' }}
+          changelog: ${{ steps.changelog.outputs.text }}
+          loaders: neoforge
+          game-versions: ${{ env.GAME_VERSIONS }}
+          java: ${{ env.JAVA_VERSION }}
+          dependencies: ${{ env.DEPENDENCIES }}
+          fail-mode: fail-at-end
+          retry-attempts: 2
+          retry-delay: 10000
+
+  # ── 4. PUBLISH TO MAVEN (optional) ──────────────────────────────────
+  # Skipped entirely unless the MAVEN_URL repo variable is set — so mods
+  # that don't publish to a maven repo never even spin up this job.
+  # Runs alongside `publish`, not after it (both only depend on `build`).
+  publish-maven:
+    needs: build
+    if: vars.MAVEN_URL != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
+
+      - run: chmod +x gradlew
+
+      - name: Publish to Maven
+        env:
+          MAVEN_URL: ${{ vars.MAVEN_URL }}
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+        run: ./gradlew :fabric:publish :forge:publish :neoforge:publish --no-daemon
