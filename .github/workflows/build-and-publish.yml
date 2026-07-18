@@ -21,7 +21,6 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
           cache: gradle
-      - run: chmod +x gradlew
       - name: Build Jar files
         run: ./gradlew compileJava --no-daemon
 
@@ -35,7 +34,6 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
           cache: gradle
-      - run: chmod +x gradlew
       - name: Build Jar files
         run: ./gradlew :fabric:runGameTest --no-deamon
 
@@ -49,7 +47,6 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
           cache: gradle
-      - run: chmod +x gradlew
       - name: Build Jar files
         run: ./gradlew :forge:runGameTestServer --no-deamon
 
@@ -63,6 +60,5 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
           cache: gradle
-      - run: chmod +x gradlew
       - name: Build Jar files
         run: ./gradlew :neoforge:runGameTestServer --no-deamon
