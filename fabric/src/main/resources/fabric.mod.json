@@ -18,6 +18,9 @@
     ],
     "client": [
       "net.morthen.example.ExampleClient"
+    ],
+    "fabric-gametest": [
+      "net.morthen.test.ExampleGameTest"
     ]
   },
   "mixins": [ "${mod_id}.mixins.json" ],

@@ -28,7 +28,10 @@ minecraft {
             args "--mixin.config=${mod_id}.mixins.json"
         }
 
-        register('client') {
+        register('client') {}
+
+        register('gameTestServer') {
+            systemProperty 'forge.enableGameTest', 'true'
             systemProperty 'forge.enabledGameTestNamespaces', mod_id
         }
     }

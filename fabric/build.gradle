@@ -32,3 +32,11 @@ loom {
         }
     }
 }
+
+fabricApi {
+    configureTests {
+        createSourceSet = true
+        modId = mod_id
+        eula = true // agrees to the Minecraft EULA
+    }
+}

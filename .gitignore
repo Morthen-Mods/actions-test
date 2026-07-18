@@ -19,3 +19,5 @@ out/
 /common/runs/server/*
 !/common/runs/server/eula.txt
 !/common/runs/server/server.properties
+/common/runs/gametest
+/common/runs/gametestserver
