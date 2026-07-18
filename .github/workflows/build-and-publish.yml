@@ -27,41 +27,50 @@ jobs:
       - name: Compile Java
         run: gradle compileJava --no-daemon
 
-#  fabric_gametest:
-#    needs: compile_test
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v7
-#      - uses: actions/setup-java@v5
-#        with:
-#          distribution: temurin
-#          java-version: ${{ env.JAVA_VERSION }}
-#          cache: gradle
-#      - name: Run Fabric Gametests
-#        run: ./gradlew :fabric:runGameTest --no-deamon
-#
-#  forge_gametest:
-#    needs: compile_test
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v7
-#      - uses: actions/setup-java@v5
-#        with:
-#          distribution: temurin
-#          java-version: ${{ env.JAVA_VERSION }}
-#          cache: gradle
-#      - name: Run Forge Gametests
-#        run: ./gradlew :forge:runGameTestServer --no-deamon
-#
-#  neoforge_gametest:
-#    needs: compile_test
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v7
-#      - uses: actions/setup-java@v5
-#        with:
-#          distribution: temurin
-#          java-version: ${{ env.JAVA_VERSION }}
-#          cache: gradle
-#      - name: Run Neoforge Gametests
-#        run: ./gradlew :neoforge:runGameTestServer --no-deamon
+  fabric_gametest:
+    needs: compile_test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+      - name: Run Fabric Gametests
+        run: gradle :fabric:runGameTest --no-deamon
+
+  forge_gametest:
+    needs: compile_test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+      - name: Run Forge Gametests
+        run: gradle :forge:runGameTestServer --no-deamon
+
+  neoforge_gametest:
+    needs: compile_test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+      - name: Run Neoforge Gametests
+        run: gradle :neoforge:runGameTestServer --no-deamon
