@@ -9,8 +9,28 @@ concurrency:
 
 env:
   JAVA_VERSION: 25
+  TEST_VARIABLE: empty
 
 jobs:
+  # Read Mod properties and safe them in
+  read_properties:
+    runs-on: ubuntu latest
+#    outputs:
+#      java_version: ${{ steps.props.outputs.java_version }}
+#      game_version: ${{ steps.props.outputs.game_version }}
+#      mod_version: ${{ steps.props.outputs.mod_version }}
+#      mod_dependencies_common: ${{ steps.props.outputs.mod_dependencies_common }}
+#      mod_dependencies_fabric: ${{ steps.props.outputs.mod_dependencies_fabric }}
+#      mod_dependencies_forge: ${{ steps.props.outputs.mod_dependencies_forge }}
+#      mod_dependencies_neoforge: ${{ steps.props.outputs.mod_dependencies_neoforge }}
+#      mod_environment: ${{ steps.props.outputs.mod_environment }}
+#      modrinth_id: ${{ steps.props.outputs.modrinth_id }}
+#      curseforge_id: ${{ steps.props.outputs.curseforge_id }}
+    steps:
+      - name: Read Properties from gradle.properties
+        run: echo "env.TEST_VARIABLE=$(grep '^group=' gradle.properties | cut -d'=' -f2)" | echo ${{ env.TEST_VARIABLE }}
+
+
   # Test if everything compiles without any issue
   compile:
     runs-on: ubuntu-latest
@@ -27,7 +47,7 @@ jobs:
       - name: Compile Java
         run: gradle compileJava --no-daemon
 
-  # Run the fabric
+  # Run all Gametest tasks
   gametests:
     needs: compile
     runs-on: ubuntu-latest
@@ -48,33 +68,8 @@ jobs:
       - name: Run Neoforge Gametests
         run: gradle :neoforge:runGameTestServer
 
-#  forge_gametest:
-#    needs: compile_test
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Checkout sources
-#        uses: actions/checkout@v7
-#      - name: Setup Java
-#        uses: actions/setup-java@v5
-#        with:
-#          distribution: temurin
-#          java-version: ${{ env.JAVA_VERSION }}
-#      - name: Setup Gradle
-#        uses: gradle/actions/setup-gradle@v6
-#
-#
-#  neoforge_gametest:
-#    needs: compile_test
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Checkout sources
-#        uses: actions/checkout@v7
-#      - name: Setup Java
-#        uses: actions/setup-java@v5
-#        with:
-#          distribution: temurin
-#          java-version: ${{ env.JAVA_VERSION }}
-#      - name: Setup Gradle
-#        uses: gradle/actions/setup-gradle@v6
-#      - name: Run Neoforge Gametests
-#        run: gradle :neoforge:runGameTestServer
+  # Next up we build the jar files and store them for later usages
+
+  # Now we upload the files to Curseforge and Modrinth
+
+  # The last task will be the upload to the maven repository, this will only trigger when the MAVEN_REPO variable is set
