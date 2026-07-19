@@ -30,7 +30,7 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v7
       - name: Read Properties from gradle.properties
-        run: echo "env.TEST_VARIABLE=$(grep '^group=' './gradle.properties' | cut -d'=' -f2)" | echo ${{ env.TEST_VARIABLE }}
+        run: echo "TEST_VARIABLE=$(grep '^group=' './gradle.properties' | cut -d'=' -f2)" | echo ${{ env.TEST_VARIABLE }}
 
 
 #  # Test if everything compiles without any issue
