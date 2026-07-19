@@ -15,7 +15,7 @@ jobs:
           java_version: ${{ steps.props.outputs.java_version }}
           modrinth_id: ${{ steps.props.outputs.modrinth_id }}
           curseforge_id: ${{ steps.props.outputs.curseforge_id }}
-          game_version: ${{ steps.props.outputs.game_version }}
+          minecraft_version: ${{ steps.props.outputs.minecraft_version }}
           mod_version: ${{ steps.props.outputs.mod_version }}
           mod_dependencies: ${{ steps.props.outputs.mod_dependencies }}
           mod_environment: ${{ steps.props.outputs.mod_environment }}
@@ -23,6 +23,7 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v7
       - name: Read Properties from gradle.properties
+        id: props
         run: |
           # Base variables
           echo "java_version=$(grep '^java_version=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
