@@ -17,8 +17,7 @@ jobs:
         uses: actions/checkout@v7
       - name: Read Properties from gradle.properties
         run: |
-          group=$(grep '^group=' ./gradle.properties | cut -d'=' -f2)
-          echo "TEST_VARIABLE=$group" >> "$GITHUB_ENV"
+          echo "TEST_VARIABLE=$(grep '^group=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_ENV"
       - name: Test variable
         run: |
           echo "$TEST_VARIABLE"
