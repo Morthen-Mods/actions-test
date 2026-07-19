@@ -7,26 +7,32 @@ concurrency:
   group: publish-mod
   cancel-in-progress: false
 
-env:
-  JAVA_VERSION: 25
-
 jobs:
   # Read Mod properties and safe them in
   read_properties:
     runs-on: ubuntu-latest
+    outputs:
+          java_version: ${{ steps.props.outputs.java_version }}
+          modrinth_id: ${{ steps.props.outputs.modrinth_id }}
+          curseforge_id: ${{ steps.props.outputs.curseforge_id }}
+          game_version: ${{ steps.props.outputs.game_version }}
+          mod_version: ${{ steps.props.outputs.mod_version }}
+          mod_dependencies: ${{ steps.props.outputs.mod_dependencies }}
+          mod_environment: ${{ steps.props.outputs.mod_environment }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@v7
       - name: Read Properties from gradle.properties
         run: |
           # Base variables
-          echo "MODRINTH_ID=$(grep '^modrinth_id=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_ENV"
-          echo "CURSEFORGE_ID=$(grep '^curseforge_id=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_ENV"
-          echo "MINECRAFT_VERSION=$(grep '^minecraft_version=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_ENV"
+          echo "java_version=$(grep '^java_version=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
+          echo "modrinth_id=$(grep '^modrinth_id=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
+          echo "curseforge_id=$(grep '^curseforge_id=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
+          echo "minecraft_version=$(grep '^minecraft_version=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
           # Mod related
-          echo "MOD_VERSION=$(grep '^mod_version=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_ENV"
-          echo "MOD_ENVIRONMENT=$(grep '^mod_environment=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_ENV"
-          echo "MOD_DEPENDENCIES=$(grep '^mod_dependencies=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_ENV"
+          echo "mod_version=$(grep '^mod_version=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
+          echo "mod_environment=$(grep '^mod_environment=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
+          echo "mod_dependencies=$(grep '^mod_dependencies=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
 
   # Test if everything compiles without any issue
   compile:
@@ -39,15 +45,15 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
+          java-version: ${{ needs.read_properties.outputs.java_version }}
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
       - name: Compile Java
-        run: gradle compileJava --no-daemon | echo ${{ env.CURSEFORGE_ID }}
+        run: gradle compileJava --no-daemon | echo ${{ needs.read_properties.outputs.curseforge_id }}
 
   # Run all Gametest tasks
   gametests:
-    needs: compile
+    needs: [read_properties, compile]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -56,7 +62,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
+          java-version: ${{ needs.read_properties.outputs.java_version }}
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
       - name: Run Fabric Gametests
