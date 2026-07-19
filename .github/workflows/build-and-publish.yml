@@ -27,6 +27,8 @@ jobs:
 #      modrinth_id: ${{ steps.props.outputs.modrinth_id }}
 #      curseforge_id: ${{ steps.props.outputs.curseforge_id }}
     steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
       - name: Read Properties from gradle.properties
         run: echo "env.TEST_VARIABLE=$(grep '^group=' './gradle.properties' | cut -d'=' -f2)" | echo ${{ env.TEST_VARIABLE }}
 
