@@ -7,6 +7,9 @@ concurrency:
   group: publish-mod
   cancel-in-progress: false
 
+env:
+  JAVA_VERSION: 25
+
 jobs:
   # Read Mod properties and safe them in
   read_properties:
@@ -17,7 +20,6 @@ jobs:
       - name: Read Properties from gradle.properties
         run: |
           # Base variables
-          echo "JAVA_VERSION=$(grep '^java_version=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_ENV"
           echo "MODRINTH_ID=$(grep '^modrinth_id=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_ENV"
           echo "CURSEFORGE_ID=$(grep '^curseforge_id=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_ENV"
           echo "MINECRAFT_VERSION=$(grep '^minecraft_version=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_ENV"
@@ -41,7 +43,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
       - name: Compile Java
-        run: gradle compileJava --no-daemon
+        run: gradle compileJava --no-daemon | echo ${{ env.CURSEFORGE_ID }}
 
   # Run all Gametest tasks
   gametests:
