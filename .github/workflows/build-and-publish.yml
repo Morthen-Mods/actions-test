@@ -128,7 +128,6 @@ jobs:
           java: ${{ needs.read_properties.outputs.java_version }}
           dependencies: fabric-api(required), ${{ needs.read_properties.outputs.mod_dependencies }}
           environment: ${{ needs.read_properties.outputs.mod_environment }}
-          fail-mode: fail-at-end
           retry-attempts: 2
           retry-delay: 10000
 
