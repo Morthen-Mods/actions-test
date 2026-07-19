@@ -33,6 +33,7 @@ jobs:
 
   # Test if everything compiles without any issue
   compile:
+    needs: read_properties
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
