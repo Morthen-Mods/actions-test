@@ -36,7 +36,7 @@ jobs:
           echo "mod_environment=$(grep '^mod_environment=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
           echo "mod_dependencies=$(grep '^mod_dependencies=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
           # Changelog
-          echo "changelog=$((grep '^java_version=' ./CHANGELOG.md))" >> "$GITHUB_OUTPUT"
+          echo "changelog=$((grep ./CHANGELOG.md))" >> "$GITHUB_OUTPUT"
 
   # Test if everything compiles without any issue
   compile:
