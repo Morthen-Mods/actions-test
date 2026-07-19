@@ -16,6 +16,7 @@ jobs:
           modrinth_id: ${{ steps.props.outputs.modrinth_id }}
           curseforge_id: ${{ steps.props.outputs.curseforge_id }}
           minecraft_version: ${{ steps.props.outputs.minecraft_version }}
+          mod_id: ${{ steps.props.outputs.mod_id }}
           mod_version: ${{ steps.props.outputs.mod_version }}
           mod_dependencies: ${{ steps.props.outputs.mod_dependencies }}
           mod_environment: ${{ steps.props.outputs.mod_environment }}
@@ -32,6 +33,7 @@ jobs:
           echo "curseforge_id=$(grep '^curseforge_id=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
           echo "minecraft_version=$(grep '^minecraft_version=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
           # Mod related
+          echo "mod_id=$(grep '^mod_id=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
           echo "mod_version=$(grep '^mod_version=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
           echo "mod_environment=$(grep '^mod_environment=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
           echo "mod_dependencies=$(grep '^mod_dependencies=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
@@ -117,8 +119,8 @@ jobs:
         with:
           modrinth-id: ${{ needs.read_properties.outputs.modrinth_id }}
           modrinth-token: ${{ secrets.MODRINTH_API }}
-          #curseforge-id: ${{ needs.read_properties.outputs.curseforge_id }}
-          #curseforge-token: ${{ secrets.CURSEFORGE_API }}
+          curseforge-id: ${{ needs.read_properties.outputs.curseforge_id }}
+          curseforge-token: ${{ secrets.CURSEFORGE_API }}
           files: fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
           version: ${{ needs.read_properties.outputs.mod_version }}
           version-type: release
