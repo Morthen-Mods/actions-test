@@ -15,23 +15,15 @@ jobs:
   # Read Mod properties and safe them in
   read_properties:
     runs-on: ubuntu-latest
-#    outputs:
-#      java_version: ${{ steps.props.outputs.java_version }}
-#      game_version: ${{ steps.props.outputs.game_version }}
-#      mod_version: ${{ steps.props.outputs.mod_version }}
-#      mod_dependencies_common: ${{ steps.props.outputs.mod_dependencies_common }}
-#      mod_dependencies_fabric: ${{ steps.props.outputs.mod_dependencies_fabric }}
-#      mod_dependencies_forge: ${{ steps.props.outputs.mod_dependencies_forge }}
-#      mod_dependencies_neoforge: ${{ steps.props.outputs.mod_dependencies_neoforge }}
-#      mod_environment: ${{ steps.props.outputs.mod_environment }}
-#      modrinth_id: ${{ steps.props.outputs.modrinth_id }}
-#      curseforge_id: ${{ steps.props.outputs.curseforge_id }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@v7
       - name: Read Properties from gradle.properties
-        run: echo "TEST_VARIABLE=$(grep '^group=' './gradle.properties' | cut -d'=' -f2)" | echo ${{ env.TEST_VARIABLE }}
-
+        run: |
+          group=$(grep '^group=' ./gradle.properties | cut -d'=' -f2)
+          echo "TEST_VARIABLE=$group" >> "$GITHUB_ENV"
+          echo ${{ env.TEST_VARIABLE }}
+          
 
 #  # Test if everything compiles without any issue
 #  compile:
