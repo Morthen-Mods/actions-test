@@ -34,7 +34,7 @@ jobs:
           echo "minecraft_version=$(grep '^minecraft_version=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
           # Mod related
           echo "mod_id=$(grep '^mod_id=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
-          echo "mod_version=$(grep '^mod_version=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
+          echo "mod_version=$(grep '^version=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
           echo "mod_environment=$(grep '^mod_environment=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
           echo "mod_dependencies=$(grep '^mod_dependencies=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
           # Changelog
@@ -123,12 +123,13 @@ jobs:
           curseforge-token: ${{ secrets.CURSEFORGE_API }}
           files: fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
           version: ${{ needs.read_properties.outputs.mod_version }}
+          name: ${{ needs.read_properties.outputs.mod_id }}-fabric-${{ needs.read_properties.outputs.minecraft_version }}-${{ needs.read_properties.outputs.mod_version }}
           version-type: release
           changelog: ${{ needs.read_properties.outputs.changelog }}
           loaders: fabric, quilt
           game-versions: ${{ needs.read_properties.outputs.minecraft_version }}
           java: ${{ needs.read_properties.outputs.java_version }}
-          dependencies: fabric-api(required), ${{ needs.read_properties.outputs.mod_dependencies }}
+          dependencies: [fabric-api(required), ${{ needs.read_properties.outputs.mod_dependencies }}]
           environment: ${{ needs.read_properties.outputs.mod_environment }}
           retry-attempts: 2
           retry-delay: 10000
