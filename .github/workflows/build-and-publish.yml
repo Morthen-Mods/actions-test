@@ -21,7 +21,7 @@ jobs:
       - name: Read Properties from gradle.properties
         run: |
           group=$(grep '^group=' ./gradle.properties | cut -d'=' -f2)
-          echo "TEST_VARIABLE=$group" >> "$GITHUB_ENV"
+          echo env.TEST_VARIABLE = $group
           echo ${{ env.TEST_VARIABLE }}
           
 
