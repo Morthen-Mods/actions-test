@@ -14,7 +14,7 @@ env:
 jobs:
   # Read Mod properties and safe them in
   read_properties:
-    runs-on: ubuntu latest
+    runs-on: ubuntu-latest
 #    outputs:
 #      java_version: ${{ steps.props.outputs.java_version }}
 #      game_version: ${{ steps.props.outputs.game_version }}
