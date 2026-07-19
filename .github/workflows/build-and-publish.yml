@@ -7,9 +7,6 @@ concurrency:
   group: publish-mod
   cancel-in-progress: false
 
-env:
-  JAVA_VERSION: 25
-  TEST_VARIABLE: empty
 
 jobs:
   # Read Mod properties and safe them in
@@ -20,8 +17,7 @@ jobs:
         uses: actions/checkout@v7
       - name: Read Properties from gradle.properties
         run: |
-          group=$(grep '^group=' ./gradle.properties | cut -d'=' -f2)
-          echo env.TEST_VARIABLE = $group
+          echo "TEST_VARIABLE=$(grep '^group=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_ENV"
           echo ${{ env.TEST_VARIABLE }}
           
 
