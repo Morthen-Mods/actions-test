@@ -19,6 +19,7 @@ jobs:
           mod_version: ${{ steps.props.outputs.mod_version }}
           mod_dependencies: ${{ steps.props.outputs.mod_dependencies }}
           mod_environment: ${{ steps.props.outputs.mod_environment }}
+          changelog: ${{ steps.props.outputs.changelog }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@v7
@@ -34,6 +35,8 @@ jobs:
           echo "mod_version=$(grep '^mod_version=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
           echo "mod_environment=$(grep '^mod_environment=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
           echo "mod_dependencies=$(grep '^mod_dependencies=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
+          # Changelog
+          echo "changelog=$((grep '^java_version=' ./CHANGELOG.md))" >> "$GITHUB_OUTPUT"
 
   # Test if everything compiles without any issue
   compile:
@@ -74,7 +77,59 @@ jobs:
         run: gradle :neoforge:runGameTestServer
 
   # Next up we build the jar files and store them for later usages
+  build:
+    needs: [read_properties, gametests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ needs.read_properties.outputs.java_version }}
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+      - name: Build all Jars
+        run: gradle build
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-libs
+          path: |
+            common/build/libs/*.jar
+            fabric/build/libs/*.jar
+            forge/build/libs/*.jar
+            neoforge/build/libs/*.jar
+          if-no-files-found: error
 
   # Now we upload the files to Curseforge and Modrinth
+  mod_publish:
+    needs: [read_properties, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: build-libs
+      - name: Publish Fabric build
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: ${{ needs.read_properties.outputs.modrinth_id }}
+          modrinth-token: ${{ secrets.MODRINTH_API }}
+          #curseforge-id: ${{ needs.read_properties.outputs.curseforge_id }}
+          #curseforge-token: ${{ secrets.CURSEFORGE_API }}
+          files: fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
+          version: ${{ needs.read_properties.outputs.mod_version }}
+          version-type: release
+          changelog: ${{ needs.read_properties.outputs.changelog }}
+          loaders: fabric, quilt
+          game-versions: ${{ needs.read_properties.outputs.minecraft_version }}
+          java: ${{ needs.read_properties.outputs.java_version }}
+          dependencies: fabric-api(required), ${{ needs.read_properties.outputs.mod_dependencies }}
+          environment: ${{ needs.read_properties.outputs.mod_environment }}
+          fail-mode: fail-at-end
+          retry-attempts: 2
+          retry-delay: 10000
 
   # The last task will be the upload to the maven repository, this will only trigger when the MAVEN_REPO variable is set
