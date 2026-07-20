@@ -7,6 +7,17 @@ concurrency:
   group: publish-mod
   cancel-in-progress: false
 
+env:
+  ENVIRONMENT: client | server
+  FABRIC_DEPENDENCIES: |
+    fabric-api(required)
+    mod-menu(optional)
+  FORGE_DEPENDENCIES: |
+  PUBLISH_MAVEN: false
+  MAVEN_URL: "https://maven.sbvl.de/releases"
+  MAVEN_USERNAME: ${{ secrets.MAVEN_USER }}
+  MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+
 jobs:
   # Read Mod properties and safe them in
   read_properties:
@@ -17,7 +28,6 @@ jobs:
           curseforge_id: ${{ steps.props.outputs.curseforge_id }}
           minecraft_version: ${{ steps.props.outputs.minecraft_version }}
           mod_version: ${{ steps.props.outputs.mod_version }}
-          mod_environment: ${{ steps.props.outputs.mod_environment }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@v7
@@ -30,66 +40,40 @@ jobs:
           echo "curseforge_id=$(grep '^curseforge_id=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
           echo "minecraft_version=$(grep '^minecraft_version=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
           # Mod related
-          echo "mod_id=$(grep '^mod_id=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
           echo "mod_version=$(grep '^version=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
-          echo "mod_environment=$(grep '^mod_environment=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
-          echo "mod_dependencies=$(grep '^mod_dependencies=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
 
-#  # Test if everything compiles without any issue
-#  compile:
-#    needs: read_properties
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Checkout sources
-#        uses: actions/checkout@v7
-#      - name: Setup Java
-#        uses: actions/setup-java@v5
-#        with:
-#          distribution: temurin
-#          java-version: ${{ needs.read_properties.outputs.java_version }}
-#      - name: Setup Gradle
-#        uses: gradle/actions/setup-gradle@v6
-#      - name: Compile Java
-#        run: gradle compileJava --no-daemon | echo ${{ needs.read_properties.outputs.curseforge_id }}
-#
-#  # Run all Gametest tasks
-#  gametests:
-#    needs: [read_properties, compile]
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Checkout sources
-#        uses: actions/checkout@v7
-#      - name: Setup Java
-#        uses: actions/setup-java@v5
-#        with:
-#          distribution: temurin
-#          java-version: ${{ needs.read_properties.outputs.java_version }}
-#      - name: Setup Gradle
-#        uses: gradle/actions/setup-gradle@v6
-#      - name: Run Fabric Gametests
-#        run: gradle :fabric:runGameTest
-#      - name: Run Forge Gametests
-#        run: gradle :forge:runGameTestServer
-#      - name: Run Neoforge Gametests
-#        run: gradle :neoforge:runGameTestServer
-
-  # Next up we build the jar files and store them for later usages
-  build:
-    needs: [read_properties]
+  # 1. Test if the Code compiles successfully
+  # 2. Run all Gametests for each loader
+  # 3. Build the jar files if all tests are successfully
+  # 4. Upload the Jar artifacts for publish
+  test_and_build:
     runs-on: ubuntu-latest
+    needs: read_properties
     steps:
-      - name: Checkout sources
+      - name: Checkout Sources
         uses: actions/checkout@v7
-      - name: Setup Java
+      - name: Setup Java Environment
         uses: actions/setup-java@v5
         with:
-          distribution: temurin
           java-version: ${{ needs.read_properties.outputs.java_version }}
-      - name: Setup Gradle
+          distribution: temurin
+      - name: Setup Gradle Environment
         uses: gradle/actions/setup-gradle@v6
-      - name: Build all Jars
+        # 1. Test if the Code compiles successfully
+      - name: Test Compile all Projects
+        run: gradle compileJava --no-daemon
+        # 2. Run all Gametests for each loader
+      - name: Run Fabric Gametests
+        run: gradle :fabric:runGameTest
+      - name: Run Forge Gametests
+        run: gradle :forge:runGameTestServer
+      - name: Run Neoforge Gametests
+        run: gradle :neoforge:runGameTestServer
+        # 3. Build the jar files if all tests are successfully
+      - name: Build Mod Jars
         run: gradle build
-      - name: Upload artifacts
+        # 4. Upload the Jar artifacts for publish
+      - name: Upload Build-Libs
         uses: actions/upload-artifact@v7
         with:
           name: build-libs
@@ -100,9 +84,10 @@ jobs:
             neoforge/build/libs/*.jar
           if-no-files-found: error
 
+
   # Now we upload the files to Curseforge and Modrinth
   mod_publish:
-    needs: [read_properties, build]
+    needs: [read_properties, test_and_build]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -126,13 +111,11 @@ jobs:
           loaders: fabric, quilt
           game-versions: ${{ needs.read_properties.outputs.minecraft_version }}
           java: ${{ needs.read_properties.outputs.java_version }}
-          dependencies: |
-            fabric-api(required)
-            mod-menu(optional)
-          environment: ${{ needs.read_properties.outputs.mod_environment }}
+          dependencies: ${{ env.FABRIC_DEPENDENCIES }}
+          environment: ${{ env.ENVIRONMENT }}
           retry-attempts: 2
           retry-delay: 10000
-      # Forge and Neoforge
+      # Forge
       - name: Publish Forge build
         uses: Kir-Antipov/mc-publish@v3.3
         with:
@@ -140,18 +123,54 @@ jobs:
           modrinth-token: ${{ secrets.MODRINTH_API }}
           curseforge-id: ${{ needs.read_properties.outputs.curseforge_id }}
           curseforge-token: ${{ secrets.CURSEFORGE_API }}
-          files: |
-            forge/build/libs/!(*-@(dev|sources|javadoc)).jar
-            neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
+          files: forge/build/libs/!(*-@(dev|sources|javadoc)).jar
           version: "${{ needs.read_properties.outputs.minecraft_version }}-${{ needs.read_properties.outputs.mod_version }}"
           version-type: release
           changelog-file: 'CHANGELOG.md'
           loaders: forge
           game-versions: ${{ needs.read_properties.outputs.minecraft_version }}
           java: ${{ needs.read_properties.outputs.java_version }}
-          dependencies: |
-          environment: ${{ needs.read_properties.outputs.mod_environment }}
+          dependencies: ${{ env.FORGE_DEPENDENCIES }}
+          environment: ${{ env.ENVIRONMENT }}
           retry-attempts: 2
           retry-delay: 10000
+      # Neoforge
+      - name: Publish Neoforge build
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: ${{ needs.read_properties.outputs.modrinth_id }}
+          modrinth-token: ${{ secrets.MODRINTH_API }}
+          curseforge-id: ${{ needs.read_properties.outputs.curseforge_id }}
+          curseforge-token: ${{ secrets.CURSEFORGE_API }}
+          files: neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
+          version: "${{ needs.read_properties.outputs.minecraft_version }}-${{ needs.read_properties.outputs.mod_version }}"
+          version-type: release
+          changelog-file: 'CHANGELOG.md'
+          loaders: neoforge
+          game-versions: ${{ needs.read_properties.outputs.minecraft_version }}
+          java: ${{ needs.read_properties.outputs.java_version }}
+          dependencies: ${{ env.FORGE_DEPENDENCIES }}
+          environment: ${{ env.ENVIRONMENT }}
+          retry-attempts: 2
+          retry-delay: 10000
+
+  # Upload all jars to you maven but only if PUBLISH_MAVEN is true
+  maven_publish:
+    if: env.PUBLISH_MAVEN
+    needs: [read_properties, test_and_build]
+    steps:
+      - name: Checkout Sources
+        uses: actions/checkout@v7
+      - name: Setup Java Environment
+        uses: actions/setup-java@v5
+        with:
+          java-version: ${{ needs.read_properties.outputs.java_version }}
+          distribution: temurin
+      - name: Setup Gradle Environment
+        uses: gradle/actions/setup-gradle@v6
+      - name: Publish Maven
+        run: gradle publish --no-daemon
+
+
 
   # The last task will be the upload to the maven repository, this will only trigger when the MAVEN_REPO variable is set

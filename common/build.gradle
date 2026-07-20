@@ -15,3 +15,22 @@ dependencies {
     compileOnly "io.github.llamalad7:mixinextras-common:${mixin_extras}"
     annotationProcessor "io.github.llamalad7:mixinextras-common:${mixin_extras}"
 }
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            from components.java
+            groupId = project.group
+            artifactId base.archivesName.get()
+        }
+    }
+    repositories {
+        maven {
+            url = uri(System.getProperty("MAVEN_URL"))
+            credentials {
+                username = System.getProperty("MAVEN_USERNAME")
+                password = System.getProperty("MAVEN_PASSWORD")
+            }
+        }
+    }
+}
