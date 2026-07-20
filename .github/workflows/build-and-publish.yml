@@ -13,7 +13,6 @@ env:
     fabric-api(required)
     mod-menu(optional)
   FORGE_DEPENDENCIES: |
-  PUBLISH_MAVEN: false
   MAVEN_URL: "https://maven.sbvl.de/releases"
   MAVEN_USERNAME: ${{ secrets.MAVEN_USER }}
   MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
@@ -154,9 +153,9 @@ jobs:
           retry-attempts: 2
           retry-delay: 10000
 
-  # Upload all jars to you maven but only if PUBLISH_MAVEN is true
+  # Upload all jars to you maven but only if MAVEN_URL is set
   maven_publish:
-    if: ${{ env.PUBLISH_MAVEN }}
+    if: env.MAVEN_URL != ''
     needs: [read_properties, test_and_build]
     steps:
       - name: Checkout Sources
