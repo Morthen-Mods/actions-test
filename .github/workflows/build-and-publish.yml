@@ -112,6 +112,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: build-libs
+      # Fabric
       - name: Publish Fabric build
         uses: Kir-Antipov/mc-publish@v3.3
         with:
@@ -120,8 +121,7 @@ jobs:
 #          curseforge-id: ${{ needs.read_properties.outputs.curseforge_id }}
 #          curseforge-token: ${{ secrets.CURSEFORGE_API }}
           files: fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
-          version: ${{ needs.read_properties.outputs.mod_version }}
-          name: "${{ needs.read_properties.outputs.mod_id }}-fabric-${{ needs.read_properties.outputs.minecraft_version }}-${{ needs.read_properties.outputs.mod_version }}"
+          version: "${{ needs.read_properties.outputs.minecraft_version }}-${{ needs.read_properties.outputs.mod_version }}"
           version-type: release
           changelog-file: 'CHANGELOG.md'
           loaders: fabric, quilt
@@ -129,6 +129,45 @@ jobs:
           java: ${{ needs.read_properties.outputs.java_version }}
           dependencies: |
             fabric-api(required)
+            mod-menu(optional)
+          environment: ${{ needs.read_properties.outputs.mod_environment }}
+          retry-attempts: 2
+          retry-delay: 10000
+      # Fabric
+      - name: Publish Forge build
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: ${{ needs.read_properties.outputs.modrinth_id }}
+          modrinth-token: ${{ secrets.MODRINTH_API }}
+#          curseforge-id: ${{ needs.read_properties.outputs.curseforge_id }}
+#          curseforge-token: ${{ secrets.CURSEFORGE_API }}
+          files: forge/build/libs/!(*-@(dev|sources|javadoc)).jar
+          version: "${{ needs.read_properties.outputs.minecraft_version }}-${{ needs.read_properties.outputs.mod_version }}"
+          version-type: release
+          changelog-file: 'CHANGELOG.md'
+          loaders: forge
+          game-versions: ${{ needs.read_properties.outputs.minecraft_version }}
+          java: ${{ needs.read_properties.outputs.java_version }}
+          dependencies: |
+          environment: ${{ needs.read_properties.outputs.mod_environment }}
+          retry-attempts: 2
+          retry-delay: 10000
+      # Fabric
+      - name: Publish Neoforge build
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: ${{ needs.read_properties.outputs.modrinth_id }}
+          modrinth-token: ${{ secrets.MODRINTH_API }}
+#          curseforge-id: ${{ needs.read_properties.outputs.curseforge_id }}
+#          curseforge-token: ${{ secrets.CURSEFORGE_API }}
+          files: neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
+          version: "${{ needs.read_properties.outputs.minecraft_version }}-${{ needs.read_properties.outputs.mod_version }}"
+          version-type: release
+          changelog-file: 'CHANGELOG.md'
+          loaders: neoforge
+          game-versions: ${{ needs.read_properties.outputs.minecraft_version }}
+          java: ${{ needs.read_properties.outputs.java_version }}
+          dependencies: |
           environment: ${{ needs.read_properties.outputs.mod_environment }}
           retry-attempts: 2
           retry-delay: 10000
