@@ -124,7 +124,7 @@ jobs:
           version: ${{ needs.read_properties.outputs.mod_version }}
           name: ${{ needs.read_properties.outputs.mod_id }}-fabric-${{ needs.read_properties.outputs.minecraft_version }}-${{ needs.read_properties.outputs.mod_version }}
           version-type: release
-          changelog-file: './CHANGELOG.md'
+          changelog-file: 'CHANGELOG.md'
           loaders: fabric, quilt
           game-versions: ${{ needs.read_properties.outputs.minecraft_version }}
           java: ${{ needs.read_properties.outputs.java_version }}
