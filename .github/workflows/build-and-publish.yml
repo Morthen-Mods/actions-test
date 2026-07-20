@@ -22,11 +22,11 @@ jobs:
   read_properties:
     runs-on: ubuntu-latest
     outputs:
-          java_version: ${{ steps.props.outputs.java_version }}
-          modrinth_id: ${{ steps.props.outputs.modrinth_id }}
-          curseforge_id: ${{ steps.props.outputs.curseforge_id }}
-          minecraft_version: ${{ steps.props.outputs.minecraft_version }}
-          mod_version: ${{ steps.props.outputs.mod_version }}
+      java_version: ${{ steps.props.outputs.java_version }}
+      modrinth_id: ${{ steps.props.outputs.modrinth_id }}
+      curseforge_id: ${{ steps.props.outputs.curseforge_id }}
+      minecraft_version: ${{ steps.props.outputs.minecraft_version }}
+      mod_version: ${{ steps.props.outputs.mod_version }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@v7
@@ -156,7 +156,6 @@ jobs:
   # Upload all jars to you maven but only if MAVEN_URL is set
   upload_to_maven:
     runs-on: ubuntu-latest
-    if: "${{ env.MAVEN_URL }}" != ''
     needs: [read_properties, test_and_build]
     steps:
       - name: Checkout Sources
