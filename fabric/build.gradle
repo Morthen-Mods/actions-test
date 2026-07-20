@@ -9,7 +9,7 @@ dependencies {
     implementation "net.fabricmc:fabric-loader:${fabric_loader}"
     implementation "net.fabricmc.fabric-api:fabric-api:${fabric_api}+${minecraft_version}"
 
-    implementation "com.terraformersmc:modmenu:${mod_menu}"
+    implementation "maven.modrinth:modmenu:${mod_menu}"
 }
 
 loom {

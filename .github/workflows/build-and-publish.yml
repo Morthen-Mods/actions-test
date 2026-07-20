@@ -20,7 +20,6 @@ jobs:
           mod_version: ${{ steps.props.outputs.mod_version }}
           mod_dependencies: ${{ steps.props.outputs.mod_dependencies }}
           mod_environment: ${{ steps.props.outputs.mod_environment }}
-          changelog: ${{ steps.props.outputs.changelog }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@v7
@@ -37,8 +36,6 @@ jobs:
           echo "mod_version=$(grep '^version=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
           echo "mod_environment=$(grep '^mod_environment=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
           echo "mod_dependencies=$(grep '^mod_dependencies=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
-          # Changelog
-          echo "changelog=$(cat ./CHANGELOG.md)" >> "$GITHUB_OUTPUT"
 
   # Test if everything compiles without any issue
   compile:
@@ -125,11 +122,13 @@ jobs:
           version: ${{ needs.read_properties.outputs.mod_version }}
           name: ${{ needs.read_properties.outputs.mod_id }}-fabric-${{ needs.read_properties.outputs.minecraft_version }}-${{ needs.read_properties.outputs.mod_version }}
           version-type: release
-          changelog: ${{ needs.read_properties.outputs.changelog }}
+          changelog-file: CHANGELOG.md
           loaders: fabric, quilt
           game-versions: ${{ needs.read_properties.outputs.minecraft_version }}
           java: ${{ needs.read_properties.outputs.java_version }}
-          dependencies: fabric-api(required)
+          dependencies: |
+            fabric-api(required)
+            ${{ needs.read_properties.outputs.mod_dependencies }}
           environment: ${{ needs.read_properties.outputs.mod_environment }}
           retry-attempts: 2
           retry-delay: 10000
