@@ -155,8 +155,8 @@ jobs:
 
   # Upload all jars to you maven but only if MAVEN_URL is set
   maven_publish:
-    if: "${{ env.MAVEN_URL }}" != ''
     runs-on: ubuntu-latest
+    if: "${{ env.MAVEN_URL }}" != ''
     needs: [read_properties, test_and_build]
     steps:
       - name: Checkout Sources
