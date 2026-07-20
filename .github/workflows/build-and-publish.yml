@@ -156,7 +156,7 @@ jobs:
 
   # Upload all jars to you maven but only if PUBLISH_MAVEN is true
   maven_publish:
-    if: env.PUBLISH_MAVEN
+    if: ${{ env.PUBLISH_MAVEN }}
     needs: [read_properties, test_and_build]
     steps:
       - name: Checkout Sources
