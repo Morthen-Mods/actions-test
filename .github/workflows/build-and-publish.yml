@@ -170,7 +170,3 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
       - name: Publish Maven
         run: gradle publish --no-daemon
-
-
-
-  # The last task will be the upload to the maven repository, this will only trigger when the MAVEN_REPO variable is set
