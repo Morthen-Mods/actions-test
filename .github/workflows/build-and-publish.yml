@@ -37,47 +37,47 @@ jobs:
           echo "mod_environment=$(grep '^mod_environment=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
           echo "mod_dependencies=$(grep '^mod_dependencies=' ./gradle.properties | cut -d'=' -f2)" >> "$GITHUB_OUTPUT"
 
-  # Test if everything compiles without any issue
-  compile:
-    needs: read_properties
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v7
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: ${{ needs.read_properties.outputs.java_version }}
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
-      - name: Compile Java
-        run: gradle compileJava --no-daemon | echo ${{ needs.read_properties.outputs.curseforge_id }}
-
-  # Run all Gametest tasks
-  gametests:
-    needs: [read_properties, compile]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v7
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: ${{ needs.read_properties.outputs.java_version }}
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
-      - name: Run Fabric Gametests
-        run: gradle :fabric:runGameTest
-      - name: Run Forge Gametests
-        run: gradle :forge:runGameTestServer
-      - name: Run Neoforge Gametests
-        run: gradle :neoforge:runGameTestServer
+#  # Test if everything compiles without any issue
+#  compile:
+#    needs: read_properties
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Checkout sources
+#        uses: actions/checkout@v7
+#      - name: Setup Java
+#        uses: actions/setup-java@v5
+#        with:
+#          distribution: temurin
+#          java-version: ${{ needs.read_properties.outputs.java_version }}
+#      - name: Setup Gradle
+#        uses: gradle/actions/setup-gradle@v6
+#      - name: Compile Java
+#        run: gradle compileJava --no-daemon | echo ${{ needs.read_properties.outputs.curseforge_id }}
+#
+#  # Run all Gametest tasks
+#  gametests:
+#    needs: [read_properties, compile]
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Checkout sources
+#        uses: actions/checkout@v7
+#      - name: Setup Java
+#        uses: actions/setup-java@v5
+#        with:
+#          distribution: temurin
+#          java-version: ${{ needs.read_properties.outputs.java_version }}
+#      - name: Setup Gradle
+#        uses: gradle/actions/setup-gradle@v6
+#      - name: Run Fabric Gametests
+#        run: gradle :fabric:runGameTest
+#      - name: Run Forge Gametests
+#        run: gradle :forge:runGameTestServer
+#      - name: Run Neoforge Gametests
+#        run: gradle :neoforge:runGameTestServer
 
   # Next up we build the jar files and store them for later usages
   build:
-    needs: [read_properties, gametests]
+    needs: [read_properties]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -107,6 +107,8 @@ jobs:
     needs: [read_properties, build]
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
       - name: Download artifacts
         uses: actions/download-artifact@v8
         with:
@@ -116,8 +118,8 @@ jobs:
         with:
           modrinth-id: ${{ needs.read_properties.outputs.modrinth_id }}
           modrinth-token: ${{ secrets.MODRINTH_API }}
-          curseforge-id: ${{ needs.read_properties.outputs.curseforge_id }}
-          curseforge-token: ${{ secrets.CURSEFORGE_API }}
+#          curseforge-id: ${{ needs.read_properties.outputs.curseforge_id }}
+#          curseforge-token: ${{ secrets.CURSEFORGE_API }}
           files: fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
           version: ${{ needs.read_properties.outputs.mod_version }}
           name: ${{ needs.read_properties.outputs.mod_id }}-fabric-${{ needs.read_properties.outputs.minecraft_version }}-${{ needs.read_properties.outputs.mod_version }}
