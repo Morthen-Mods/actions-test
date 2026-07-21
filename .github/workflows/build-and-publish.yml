@@ -138,8 +138,8 @@ jobs:
           environment: ${{ env.ENVIRONMENT }}
           retry-attempts: 2
           retry-delay: 10000
-       Publish Mod to Maven Repo
-       If the Mod shouldn't be published to the Maven repo, simply delete this step or remove the publish task from the gradle setup
+       # Publish Mod to Maven Repo
+       # If the Mod shouldn't be published to the Maven repo, simply delete this step or remove the publish task from the gradle setup
       - name: Upload to Maven Repo
         env:
           MAVEN_URL: "https://maven.sbvl.de/releases"
