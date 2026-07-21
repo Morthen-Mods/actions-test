@@ -67,7 +67,7 @@ jobs:
 
   # After everything was tested and compiled successfully we can build and upload the mods
   build_and_publish:
-    needs: [read_properties]
+    needs: [read_properties, testing]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Sources
