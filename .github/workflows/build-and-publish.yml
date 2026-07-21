@@ -143,6 +143,4 @@ jobs:
       - name: Upload to Maven Repo
         env:
           MAVEN_URL: "https://maven.sbvl.de/releases"
-          MAVEN_USERNAME: "${{ secrets.MAVEN_USER }}"
-          MAVEN_PASSWORD: "${{ secrets.MAVEN_PASSWORD }}"
-        run: echo "${{ env.MAVEN_USERNAME }}" | gradle publish --no-daemon
+        run: gradle publish -PrepoUser="${{ secrets.MAVEN_USER }}" -PrepoPassword="${{ secrets.MAVEN_PASSWORD }}" --no-daemon
