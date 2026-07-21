@@ -91,14 +91,15 @@ processResources {
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
-            from components.java
+            from(components.java)
             groupId = project.group
-            artifactId base.archivesName.get()
+            artifactId = base.archivesName.get()
         }
     }
     repositories {
         maven {
-            if (System.getenv("MAVEN_URL") != '') {
+            def mavenURL = System.getenv("MAVEN_URL")
+            if (mavenURL) {
                 url = uri(System.getenv("MAVEN_URL"))
                 credentials {
                     username = System.getenv("MAVEN_USERNAME") ?: ''
