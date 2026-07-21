@@ -102,6 +102,8 @@ publishing {
             if (mavenURL) {
                 url = uri(System.getenv("MAVEN_URL"))
                 credentials {
+                    def user = System.getenv("MAVEN_USERNAME")
+                    println user
                     username = System.getenv("MAVEN_USERNAME") ?: ''
                     password = System.getenv("MAVEN_PASSWORD") ?: ''
                 }
